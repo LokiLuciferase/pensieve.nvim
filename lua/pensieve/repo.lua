@@ -20,14 +20,13 @@ function Repo:new(dirpath, options)
 end
 
 function Repo:initOnDisk()
-    os.execute("mkdir -p " .. self.repopath .. "/entries")
-    os.execute("mkdir -p " .. self.repopath .. "/meta")
+    vim.fn.mkdir(vim.fn.expand(self.repopath .. "/entries"), "p")
+    vim.fn.mkdir(vim.fn.expand(self.repopath .. "/meta"), "p")
     os.execute("touch " .. self.repopath .. "/meta/repo.json")
 end
 
 function Repo:isOpen()
-    local cmd = 'test ! -f ' .. self.repopath .. '/meta/repo.json'
-    local retval = os.execute(cmd) / 256
+    retval = vim.fn.filereadable(vim.fn.expand(self.repopath .. "/meta/repo.json"))
     if retval == 1 then
         return true
     else
@@ -61,13 +60,14 @@ function Repo:close()
     end
 end
 
-function Repo:getDaily()
+function Repo:getDailyPath()
     self:failIfNotOpen()
-    local dt = os.date("%Y-%m-%d")
+    local dt = os.date("%Y/%m/%d")
     local ddir = self.repopath .. "/entries/" .. dt
     local df = ddir .. "/entry.md"
     local attd = ddir .. "/attachments"
-    return df  -- TODO: actually create templatedd filde _ bvim api
+    vim.fn.mkdir(vim.fn.expand(attd), "p")
+    return vim.fn.expand(df)
 end
 
 return Repo
