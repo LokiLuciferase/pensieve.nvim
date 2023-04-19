@@ -1,8 +1,10 @@
 GocryptFS = {}
 
-function GocryptFS.Open(dir_path, password)
+function GocryptFS.Open(dir_path, password, timeout)
     local cmd = "gocryptfs"
-        .. " -i '1m' "
+        .. " -i '"
+        .. (timeout or '1m')
+        .. "' "
         .. dir_path
         .. "/cipher"
         .. " "
@@ -20,9 +22,10 @@ function GocryptFS.IsOpen(dir_path)
 end
 
 function GocryptFS.Close(dir_path)
-    local f = os.execute(
-        "fusermount -u " .. dir_path .. "/plain"
-    )
+    local cmd = "fusermount -uz " .. dir_path .. "/plain" .. " 2>&1"
+    local handle = io.popen(cmd)
+    local out = handle:read("*a")
+    print("closed " .. dir_path .. ":" .. out)
 end
 
 return GocryptFS

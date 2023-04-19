@@ -4,9 +4,11 @@ Repo = {}
 
 function Repo:new(dirpath, options)
     local options = options or {}
+    local dirpath = vim.fn.expand(dirpath)
     newobj = {
         dirpath = dirpath,
-        encryption = options.encryption or "gocryptfs" 
+        encryption = options.encryption,
+        encryption_timeout = options.encryption_timeout
     }
     if newobj.encryption == "gocryptfs" then
         newobj.repopath = dirpath .. "/plain"
@@ -20,13 +22,13 @@ function Repo:new(dirpath, options)
 end
 
 function Repo:initOnDisk()
-    vim.fn.mkdir(vim.fn.expand(self.repopath .. "/entries"), "p")
-    vim.fn.mkdir(vim.fn.expand(self.repopath .. "/meta"), "p")
+    vim.fn.mkdir(self.repopath .. "/entries", "p")
+    vim.fn.mkdir(self.repopath .. "/meta", "p")
     os.execute("touch " .. self.repopath .. "/meta/repo.json")
 end
 
 function Repo:isOpen()
-    retval = vim.fn.filereadable(vim.fn.expand(self.repopath .. "/meta/repo.json"))
+    retval = vim.fn.filereadable(self.repopath .. "/meta/repo.json")
     if retval == 1 then
         return true
     else
@@ -45,9 +47,13 @@ function Repo:open()
         return
     end
     if self.encryption == "gocryptfs" then
-        -- TODO: should prompt for pw here
-        pw = "test"
-        GocryptFS.Open(self.dirpath, pw)
+
+        local pensieve_pw = nil
+        vim.ui.input(
+            {prompt = "Password for repo at " .. self.dirpath .. ":"},
+            function(input) pensieve_pw = input end
+        )
+        GocryptFS.Open(self.dirpath, pensieve_pw, self.encryption_timeout)
     end
 end
 
@@ -66,8 +72,8 @@ function Repo:getDailyPath()
     local ddir = self.repopath .. "/entries/" .. dt
     local df = ddir .. "/entry.md"
     local attd = ddir .. "/attachments"
-    vim.fn.mkdir(vim.fn.expand(attd), "p")
-    return vim.fn.expand(df)
+    vim.fn.mkdir(attd, "p")
+    return df
 end
 
 return Repo
