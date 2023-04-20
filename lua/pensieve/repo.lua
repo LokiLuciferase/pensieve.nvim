@@ -48,11 +48,7 @@ function Repo:open()
     end
     if self.encryption == "gocryptfs" then
 
-        local pensieve_pw = nil
-        vim.ui.input(
-            {prompt = "Password: "},
-            function(input) pensieve_pw = input end
-        )
+        local pensieve_pw = vim.fn.inputsecret("Password: ")
         GocryptFS.Open(self.dirpath, pensieve_pw, self.encryption_timeout)
     end
 end
