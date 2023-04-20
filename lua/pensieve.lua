@@ -18,7 +18,11 @@ function pensieve.setup(options)
 
     -- do here any startup your plugin needs, like creating commands and
     -- mappings that depend on values passed in options
-    vim.api.nvim_create_user_command("Pensieve", pensieve.write_daily, {dirname})
+    vim.api.nvim_create_user_command(
+        "Pensieve",
+        pensieve.ask_then_write_daily,
+        {}
+    )
 end
 
 function pensieve.is_configured()
@@ -42,5 +46,16 @@ function pensieve.write_daily(dirname)
     vim.cmd("e " .. dailyPath)
 end
 
+function pensieve.ask_then_write_daily()
+    local dirname = nil
+    vim.ui.input(
+        {
+            prompt = "Path: ",
+            completion = "dir"
+        },
+        function(input) dirname = input end
+    )
+    pensieve.write_daily(dirname)
+end
 pensieve.options = nil
 return pensieve
