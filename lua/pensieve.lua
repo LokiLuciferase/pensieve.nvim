@@ -40,7 +40,11 @@ function pensieve.write_daily(dirname)
     local repo = Repo:new(dirname, pensieve.options)
     repo:open()
     local cwd_pre = vim.fn.getcwd()
-    local dailyPath = repo:getDailyPath()
+    local dailyPath = repo:get_daily_path()
+    if not vim.fn.filereadable(dailyPath) then
+        local rv = vim.fn.writefile({repo:get_skeleton()}, dailyPath, "s")
+        print("returned this: " .. rv)
+    end
     local group = vim.api.nvim_create_augroup("pensieve", {clear = false})
     vim.api.nvim_create_autocmd('VimLeavePre', {group = group, callback = function() vim.fn.chdir(cwd_pre) repo:close() end})
     vim.cmd("e " .. dailyPath)

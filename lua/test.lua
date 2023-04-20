@@ -1,3 +1,4 @@
+local Repo = require "pensieve.repo"
 local pensieve = require "pensieve"
-pensieve.setup({})
-pensieve.write_daily("~/testing")
+local rv = Repo:new("~/testing-raw").getSkeleton()
+print(rv)
