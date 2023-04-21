@@ -1,58 +1,65 @@
-# pensieve 
+# pensieve.nvim
 
-[![Integration][integration-badge]][integration-runs]
+[Pensieve] implements a markdown-based diary using Neovim. Strong file-based
+encryption is optionally supported through [gocryptfs], enabling incremental sync to cloud providers.
 
-## Using
+## Installation
 
-## Testing
+Install and load the plugin, for example via [vim-plug]:
 
-This uses [busted][busted], [luassert][luassert] (both through
-[plenary.nvim][plenary]) and [matcher_combinators][matcher_combinators] to
-define tests in `test/spec/` directory. These dependencies are required only to
-run tests, that's why they are installed as git submodules.
-
-Make sure your shell is in the `./test` directory or, if it is in the root directory,
-replace `make` by `make -C ./test` in the commands below.
-
-To init the dependencies run
-
-```bash
-$ make prepare
+```
+Plug 'LokiLuciferase/pensieve.nvim'
 ```
 
-To run all tests just execute
+Make sure to add a call to the `setup` function with the proper configuration in your `init` file.
+See the [help] for available configuration options.
 
-```bash
-$ make test
+If you use `init.vim`:
+
+```
+lua require('pensieve').setup {default_encryption = 'plaintext'}
+```
+Or, if you use `init.lua`:
+
+```
+require('pensieve').setup {default_encryption = 'plaintext'}
 ```
 
-If you have [entr(1)][entr] installed you may use it to run all tests whenever a
-file is changed using:
-
-```bash
-$ make watch
+## Usage
 ```
-
-In both commands you myght specify a single spec to test/watch using:
-
-```bash
-$ make test SPEC=spec/pensieve/my_cool_module_spec.lua
-$ make watch SPEC=spec/pensieve/my_cool_module_spec.lua
+:PensieveInit <repo>
 ```
+Initializes a new diary repo at the passed path. Fails if the path points to a non-empty directory.
 
-## Github actions
+```
+:PensieveOpen <repo>
+```
+Opens the diary repo at path `repo`. Unless any files are edited in the repo, it will automatically close after `options.encryption_timeout`. The repo will also close upon closing of Neovim.
 
-An Action will run all the tests and the linter on every commit on the main
-branch and also on Pull Request. Tests will be run using 
-[stable and nightly][neovim-test-versions] versions of Neovim.
+```
+:PensieveClose
+```
+Explicitly closes the currently open repo. For encrypted repos, this will make any files in the repo inaccessible until calling `:PensieveOpen` once again.
 
-[lua]: https://www.lua.org/
-[entr]: https://eradman.com/entrproject/
-[luarocks]: https://luarocks.org/
-[busted]: https://olivinelabs.com/busted/
-[luassert]: https://github.com/Olivine-Labs/luassert
-[plenary]: https://github.com/nvim-lua/plenary.nvim
+```
+:PensieveEdit [datestring]
+```
+Opens a diary page from the currently open repo for editing - per default, today's entry. By passing either a date string like `2023-04-20` or a day offset like `t-3`, entries of other days can be edited. In case the entry for the given day does not yet exist, it is created from a markdown template.
+
+```
+:PensieveAttach <glob> [datestring]
+```
+Copies files and directories matching `glob` (e.g., `./*.png`) to a subdirectory `attachments/`
+of the diary entry for the given date (per default, today).
+
+```
+:Pensieve <repo> [datestring]
+```
+Convenience method to open a repo and immediately edit a diary page.
+
+[Pensieve]: https://www.hp-lexicon.org/thing/pensieve/
+[vim-plug]: https://github.com/junegunn/vim-plug
+[gocryptfs]: https://www.github.com/rfjakob/gocryptfs
 [integration-badge]: https://github.com/LokiLuciferase/pensieve.nvim/actions/workflows/integration.yml/badge.svg
 [integration-runs]: https://github.com/LokiLuciferase/pensieve.nvim/actions/workflows/integration.yml
-[neovim-test-versions]: .github/workflows/integration.yml#L17
 [help]: doc/pensieve.txt

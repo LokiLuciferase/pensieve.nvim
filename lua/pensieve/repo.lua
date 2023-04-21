@@ -153,4 +153,24 @@ function Repo:open_entry(date_abbrev)
     self:buf_setup_spell()
 end
 
+function Repo:attach(glob, date_abbrev)
+    self:fail_if_not_open()
+    local datestr = Utils.parse_date_abbrev(date_abbrev)
+    local datesplit = Utils.splitstring(datestr, "-")
+    if #datesplit ~= 3 then
+        error("Invalid date string: " .. datestr)
+    end
+    local attd = self.repopath .. "/entries/" .. datesplit[1] .. "/" .. datesplit[2] .. "/" .. datesplit[3] .. "/attachments/"
+    vim.fn.mkdir(attd, "p")
+    local files = vim.fn.glob(glob, true, true)
+    for key,value in pairs(files) do
+        local fname = vim.fn.fnamemodify(value, ":t")
+        local fpath = attd .. fname
+        if not Utils.file_exists(fpath) then
+            os.execute("cp -Lr " .. value .. " " .. fpath)
+        end
+    end
+    print("Attached " .. #files .. " files/dirs to entry " .. datestr .. " in repo <" .. self.repopath .. ">.")
+end
+
 return Repo

@@ -6,8 +6,8 @@ function Skeleton.get_daily(datestr)
     local entry = "### Entry"
     local emo = "### Emotions"
     local rating = "### Rating"
-    local notes = "### Notes"
-    return {header, entry, "", emo, "- x", "", rating, "y/10", "", notes}
+    local tags = "### Tags"
+    return {header, entry, "", emo, "- x", "", rating, "y/10", "", tags, "unclassified"}
 end
 
 function Skeleton.assume_default_position()
