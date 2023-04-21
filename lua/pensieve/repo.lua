@@ -110,13 +110,32 @@ function Repo:get_daily_path()
     return df
 end
 
-function Repo:setup_spell()
+function Repo:buf_setup_spell()
     self:fail_if_not_open()
     local spath = self.repopath .. "/meta/spell/spell.add"
-    vim.cmd("setlocal spell")
-    vim.cmd("setlocal spelllang=" .. table.concat(self.spell_langs, ","))
-    vim.cmd("setlocal spellfile=" .. spath)
+    vim.opt_local.spell = true
+    vim.opt_local.spelllang = table.concat(self.spell_langs, ",")
+    vim.opt_local.spellfile = spath
     vim.cmd("silent! mkspell! " .. spath .. ".spl" .. " " .. spath)
+end
+
+function Repo:buf_setup_md()
+    self:fail_if_not_open()
+    vim.opt_local.filetype = "markdown"
+    vim.opt_local.wrap = true
+    vim.opt_local.textwidth = 0
+    vim.opt_local.linebreak = true
+    vim.opt_local.showbreak = ''
+    vim.opt_local.spellcapcheck = 'none'
+    vim.opt_local.diffopt = vim.opt.diffopt + ',iwhite,iblank,followrap'
+    vim.api.nvim_buf_set_keymap(0, 'n', 'j', 'gj', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'n', 'k', 'gk', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'n', '0', 'g0', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'n', '$', 'g$', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'v', 'j', 'gj', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'v', 'k', 'gk', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'v', '0', 'g0', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'v', '$', 'g$', {noremap = true, silent = true})
 end
 
 function Repo:open_entry(fpath)
@@ -132,7 +151,8 @@ function Repo:open_entry(fpath)
     else
         vim.cmd("e " .. fpath)
     end
-    self:setup_spell()
+    self:buf_setup_md()
+    self:buf_setup_spell()
 end
 
 function Repo:open_entry_with_date(datestr)
