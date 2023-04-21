@@ -25,7 +25,8 @@ function Repo:new(dirpath, options)
         dirpath = dirpath,
         encryption = get_encryption(dirpath) or options.default_encryption,
         encryption_timeout = options.encryption_timeout,
-        spell_langs = options.spell_langs
+        spell_langs = options.spell_langs,
+        open_in_new_tab = options.open_in_new_tab,
     }
     if newobj.encryption == "gocryptfs" then
         newobj.repopath = dirpath .. "/plain"
@@ -100,16 +101,6 @@ function Repo:close()
     end
 end
 
-function Repo:get_daily_path()
-    self:fail_if_not_open()
-    local dt = os.date("%Y/%m/%d")
-    local ddir = self.repopath .. "/entries/" .. dt
-    local df = ddir .. "/entry.md"
-    local attd = ddir .. "/attachments"
-    vim.fn.mkdir(attd, "p")
-    return df
-end
-
 function Repo:buf_setup_spell()
     self:fail_if_not_open()
     local spath = self.repopath .. "/meta/spell/spell.add"
@@ -138,35 +129,27 @@ function Repo:buf_setup_md()
     vim.api.nvim_buf_set_keymap(0, 'v', '$', 'g$', {noremap = true, silent = true})
 end
 
-function Repo:open_entry(fpath)
-    if fpath == nil then
-        local daily_path = self:get_daily_path()
-        if not Utils.file_exists(daily_path) then
-            vim.fn.writefile(Skeleton.get_daily(), daily_path, "s")
-            vim.cmd("e " .. daily_path)
-            Skeleton.assume_default_position()
-        else
-            vim.cmd("e " .. daily_path)
-        end
+function Repo:open_entry(date_abbrev)
+    self:fail_if_not_open()
+    local datestr = Utils.parse_date_abbrev(date_abbrev)
+    local datesplit = Utils.splitstring(datestr, "-")
+    if #datesplit ~= 3 then
+        error("Invalid date string: " .. datestr)
+    end
+
+    local fpath = self.repopath .. "/entries/" .. datesplit[1] .. "/" .. datesplit[2] .. "/" .. datesplit[3] .. "/entry.md"
+    vim.fn.mkdir(vim.fn.fnamemodify(fpath, ":h"), "p")
+    if self.open_in_new_tab and (vim.fn.bufname("%") ~= "") then
+        vim.cmd("tabe " .. fpath)
     else
         vim.cmd("e " .. fpath)
     end
+    if not Utils.file_exists(fpath) then
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, Skeleton.get_daily(datestr))
+        Skeleton.assume_default_position()
+    end
     self:buf_setup_md()
     self:buf_setup_spell()
-end
-
-function Repo:open_entry_with_date(datestr)
-    self:fail_if_not_open()
-    if datestr == nil then
-        local fpath = nil
-    else
-        local datesplit = Utils.splitstring(datestr, "-")
-        if #datesplit ~= 3 then
-            error("Invalid date string.")
-        end
-        local fpath = self.repopath .. datesplit[1] .. "/" .. datesplit[2] .. "/" .. datesplit[3] .. "/entry.md"
-    end
-    self:open_entry(fpath)
 end
 
 return Repo

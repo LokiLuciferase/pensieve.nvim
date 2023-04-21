@@ -7,6 +7,7 @@ local function with_defaults(options)
         default_encryption = options.default_encryption or "gocryptfs",
         encryption_timeout = options.encryption_timeout or "10m",
         spell_langs = options.spell_langs or {"en_us"},
+        open_in_new_tab = options.open_in_new_tab or false,
     }
 end
 
@@ -23,9 +24,9 @@ function pensieve.setup(options)
     vim.api.nvim_create_user_command(
         "Pensieve",
         function(opts)
-            pensieve.write_daily(opts.fargs[1])
+            pensieve.write_daily(opts.fargs[1], opts.fargs[2])
         end,
-        { nargs = "?", complete = "dir" }
+        { nargs = "+", complete = "dir" }
     )
     vim.api.nvim_create_user_command(
         "PensieveInit",
@@ -40,7 +41,7 @@ function pensieve.is_configured()
     return pensieve.options ~= nil
 end
 
-function pensieve.write_daily(dirname)
+function pensieve.write_daily(dirname, datestring)
     if not pensieve.is_configured() then
         return
     end
@@ -54,7 +55,7 @@ function pensieve.write_daily(dirname)
         vim.api.nvim_err_writeln("Could not open repo.")
         return
     end
-    repo:open_entry()
+    repo:open_entry(datestring)
 end
 
 function pensieve.init_repo(dirname)
