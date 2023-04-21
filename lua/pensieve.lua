@@ -1,9 +1,11 @@
+local Utils = require("pensieve/utils")
 local Repo = require("pensieve/repo")
+local Skeleton = require("pensieve/skeleton")
 local pensieve = {}
 
 local function with_defaults(options)
     return {
-        encryption = options.encryption or "gocryptfs",
+        default_encryption = options.default_encryption or "gocryptfs",
         encryption_timeout = options.encryption_timeout or "10m"
     }
 end
@@ -23,6 +25,11 @@ function pensieve.setup(options)
         pensieve.ask_then_write_daily,
         {}
     )
+    vim.api.nvim_create_user_command(
+        "PensieveInit",
+        pensieve.ask_then_init_repo,
+        {}
+    )
 end
 
 function pensieve.is_configured()
@@ -39,15 +46,47 @@ function pensieve.write_daily(dirname)
     end
     local repo = Repo:new(dirname, pensieve.options)
     repo:open()
-    local cwd_pre = vim.fn.getcwd()
-    local dailyPath = repo:get_daily_path()
-    if not vim.fn.filereadable(dailyPath) then
-        local rv = vim.fn.writefile({repo:get_skeleton()}, dailyPath, "s")
-        print("returned this: " .. rv)
+    if not repo:is_open() then
+        vim.api.nvim_err_writeln("Could not open repo.")
+        return
     end
+
+    -- set up augroup to close repo on nvim exit
+    local cwd_pre = vim.fn.getcwd()
     local group = vim.api.nvim_create_augroup("pensieve", {clear = false})
     vim.api.nvim_create_autocmd('VimLeavePre', {group = group, callback = function() vim.fn.chdir(cwd_pre) repo:close() end})
-    vim.cmd("e " .. dailyPath)
+
+    local daily_path = repo:get_daily_path()
+    if not Utils.file_exists(daily_path) then
+        vim.fn.writefile(Skeleton.get_daily(), daily_path, "s")
+    end
+    vim.cmd("e " .. daily_path)
+    Skeleton.assume_default_position()
+end
+
+function pensieve.init_repo(dirname)
+    if not pensieve.is_configured() then
+        return
+    end
+    if not dirname then
+        vim.api.nvim_err_writeln("The passed directory is not readable.")
+        return
+    end
+    local repo = Repo:new(dirname, pensieve.options)
+    repo:init_on_disk()
+end
+
+function pensieve.ask_then_init_repo()
+    local dirname = nil
+    vim.ui.input(
+        {
+            prompt = "Path: ",
+            completion = "dir"
+        },
+        function(input) dirname = input end
+    )
+    pensieve.init_repo(dirname)
+    vim.api.nvim_out_write("Initialized repo in " .. dirname)
 end
 
 function pensieve.ask_then_write_daily()

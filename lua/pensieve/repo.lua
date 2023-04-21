@@ -1,23 +1,15 @@
-require "pensieve.crypt"
+local Utils = require("pensieve.utils")
+local GocryptFS = require("pensieve.crypt")
 
 Repo = {}
 
-local function file_exists(f)
-    local rv = vim.fn.filereadable(f)
-    if rv == 1 then
-        return true
-    else
-        return false
-    end
-end
-
 local function get_encryption(dirpath)
-    local cmd = 'test -z "$(ls -A ' .. dirpath .. ')"'
+    local cmd = 'test -z "$(ls -A ' .. dirpath .. ' 2> /dev/null)"'
     if ((not vim.fn.isdirectory(dirpath)) or (os.execute(cmd) / 256) == 0) then
         rv = nil
-    elseif file_exists(dirpath .. "/meta/repo.json") then
+    elseif Utils.file_exists(dirpath .. "/meta/repo.json") then
         rv = "plaintext"
-    elseif file_exists(dirpath .. "/cipher/gocryptfs.conf") then
+    elseif Utils.file_exists(dirpath .. "/cipher/gocryptfs.conf") then
         rv = "gocryptfs"
     else
         error("Could not identify repo encryption.")
@@ -45,13 +37,34 @@ function Repo:new(dirpath, options)
 end
 
 function Repo:init_on_disk()
+    if get_encryption(self.dirpath) then
+        error("Repo already exists at <" .. vim.fn.expand(self.dirpath) .. ">.")
+    end
+    if self.encryption == 'gocryptfs' then
+        vim.fn.mkdir(self.dirpath .. '/cipher', 'p')
+        vim.fn.mkdir(self.dirpath .. '/plain', 'p')
+        local pensieve_pw_v1 = vim.fn.inputsecret("Password: ")
+        local pensieve_pw_v2 = vim.fn.inputsecret("Repeat password: ")
+        print("")
+        GocryptFS.init(self.dirpath, pensieve_pw_v1, pensieve_pw_v2)
+        GocryptFS.open(self.dirpath, pensieve_pw_v1, self.encryption_timeout)
+
+    end
     vim.fn.mkdir(self.repopath .. "/entries", "p")
     vim.fn.mkdir(self.repopath .. "/meta", "p")
     os.execute("touch " .. self.repopath .. "/meta/repo.json")
+    if not self:is_open() then
+        error("Could not initialize repo.")
+    end
+    if self.encryption == 'gocryptfs' then
+        GocryptFS.close(self.dirpath)
+    end
+    print("\r\n")
+    print("Repo initialized at <" .. vim.fn.expand(self.dirpath) .. ">, encryption = " .. self.encryption .. ".")
 end
 
 function Repo:is_open()
-    return file_exists(self.repopath .. "/meta/repo.json")
+    return Utils.file_exists(self.repopath .. "/meta/repo.json")
 end
 
 function Repo:fail_if_not_open()
@@ -87,19 +100,6 @@ function Repo:get_daily_path()
     local attd = ddir .. "/attachments"
     vim.fn.mkdir(attd, "p")
     return df
-end
-
-function Repo:get_skeleton()
-    local header = "## " .. os.date("%Y-%m-%d")
-    local skel = [[
-### Entry
-
-### Emotions
-### Rating
-x/10
-### Notes
-]]
-    return header .. "\n" .. skel
 end
 
 return Repo
