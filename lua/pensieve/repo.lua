@@ -112,6 +112,7 @@ end
 
 function Repo:buf_setup_md()
     self:fail_if_not_open()
+    vim.opt_local.autochdir = true
     vim.opt_local.filetype = "markdown"
     vim.opt_local.wrap = true
     vim.opt_local.textwidth = 0
