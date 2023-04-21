@@ -1,6 +1,5 @@
 local Utils = require("pensieve/utils")
 local Repo = require("pensieve/repo")
-local Skeleton = require("pensieve/skeleton")
 local pensieve = {}
 
 local function with_defaults(options)
@@ -55,24 +54,7 @@ function pensieve.write_daily(dirname)
         vim.api.nvim_err_writeln("Could not open repo.")
         return
     end
-
-    -- set up augroup to close repo on nvim exit
-    local cwd_pre = vim.fn.getcwd()
-    local group = vim.api.nvim_create_augroup("pensieve", {clear = false})
-    vim.api.nvim_create_autocmd('VimLeavePre', {group = group, callback = function() vim.fn.chdir(cwd_pre) repo:close() end})
-
-    -- get and open daily file
-    local daily_path = repo:get_daily_path()
-    if not Utils.file_exists(daily_path) then
-        vim.fn.writefile(Skeleton.get_daily(), daily_path, "s")
-        vim.cmd("e " .. daily_path)
-        Skeleton.assume_default_position()
-    else
-        vim.cmd("e " .. daily_path)
-    end
-
-    -- set up spelling in repo
-    repo:setup_spell()
+    repo:open_entry()
 end
 
 function pensieve.init_repo(dirname)

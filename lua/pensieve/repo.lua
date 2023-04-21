@@ -1,5 +1,6 @@
 local Utils = require("pensieve.utils")
 local GocryptFS = require("pensieve.crypt")
+local Skeleton = require("pensieve/skeleton")
 
 Repo = {}
 
@@ -84,6 +85,10 @@ function Repo:open()
         local pensieve_pw = vim.fn.inputsecret("Password: ")
         GocryptFS.open(self.dirpath, pensieve_pw, self.encryption_timeout)
     end
+    -- register augroup/autocmd to close repo on nvim exit
+    local cwd_pre = vim.fn.getcwd()
+    local group = vim.api.nvim_create_augroup("pensieve", {clear = false})
+    vim.api.nvim_create_autocmd('VimLeavePre', {group = group, callback = function() vim.fn.chdir(cwd_pre) self:close() end})
 end
 
 function Repo:close()
@@ -112,6 +117,36 @@ function Repo:setup_spell()
     vim.cmd("setlocal spelllang=" .. table.concat(self.spell_langs, ","))
     vim.cmd("setlocal spellfile=" .. spath)
     vim.cmd("silent! mkspell! " .. spath .. ".spl" .. " " .. spath)
+end
+
+function Repo:open_entry(fpath)
+    if fpath == nil then
+        local daily_path = self:get_daily_path()
+        if not Utils.file_exists(daily_path) then
+            vim.fn.writefile(Skeleton.get_daily(), daily_path, "s")
+            vim.cmd("e " .. daily_path)
+            Skeleton.assume_default_position()
+        else
+            vim.cmd("e " .. daily_path)
+        end
+    else
+        vim.cmd("e " .. fpath)
+    end
+    self:setup_spell()
+end
+
+function Repo:open_entry_with_date(datestr)
+    self:fail_if_not_open()
+    if datestr == nil then
+        local fpath = nil
+    else
+        local datesplit = Utils.splitstring(datestr, "-")
+        if #datesplit ~= 3 then
+            error("Invalid date string.")
+        end
+        local fpath = self.repopath .. datesplit[1] .. "/" .. datesplit[2] .. "/" .. datesplit[3] .. "/entry.md"
+    end
+    self:open_entry(fpath)
 end
 
 return Repo
