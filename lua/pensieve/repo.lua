@@ -23,7 +23,8 @@ function Repo:new(dirpath, options)
     newobj = {
         dirpath = dirpath,
         encryption = get_encryption(dirpath) or options.default_encryption,
-        encryption_timeout = options.encryption_timeout
+        encryption_timeout = options.encryption_timeout,
+        spell_langs = options.spell_langs
     }
     if newobj.encryption == "gocryptfs" then
         newobj.repopath = dirpath .. "/plain"
@@ -52,7 +53,9 @@ function Repo:init_on_disk()
     end
     vim.fn.mkdir(self.repopath .. "/entries", "p")
     vim.fn.mkdir(self.repopath .. "/meta", "p")
+    vim.fn.mkdir(self.repopath .. "/meta/spell", "p")
     os.execute("touch " .. self.repopath .. "/meta/repo.json")
+    os.execute("touch " .. self.repopath .. "/meta/spell/spell.add")
     if not self:is_open() then
         error("Could not initialize repo.")
     end
@@ -100,6 +103,15 @@ function Repo:get_daily_path()
     local attd = ddir .. "/attachments"
     vim.fn.mkdir(attd, "p")
     return df
+end
+
+function Repo:setup_spell()
+    self:fail_if_not_open()
+    local spath = self.repopath .. "/meta/spell/spell.add"
+    vim.cmd("setlocal spell")
+    vim.cmd("setlocal spelllang=" .. table.concat(self.spell_langs, ","))
+    vim.cmd("setlocal spellfile=" .. spath)
+    vim.cmd("silent! mkspell! " .. spath .. ".spl" .. " " .. spath)
 end
 
 return Repo

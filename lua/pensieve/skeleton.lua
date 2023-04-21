@@ -11,6 +11,7 @@ end
 
 function Skeleton.assume_default_position()
     vim.cmd("normal gg1jo")
+    vim.cmd("w")
     vim.cmd("startinsert")
 end
 

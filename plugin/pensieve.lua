@@ -3,13 +3,6 @@ if vim.fn.has("nvim-0.7.0") == 0 then
     return
 end
 
-if vim.g.pensieve_encryption == "gocryptfs" then
-    if not vim.fn.executable("gocryptfs") then
-        vim.api.nvim_err_writeln("Use of gocryptfs with pensieve requested but the binary was not found on the PATH.")
-        return
-    end
-end
-
 -- make sure this file is loaded only once
 if vim.g.loaded_pensieve == 1 then
     return

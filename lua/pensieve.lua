@@ -6,7 +6,8 @@ local pensieve = {}
 local function with_defaults(options)
     return {
         default_encryption = options.default_encryption or "gocryptfs",
-        encryption_timeout = options.encryption_timeout or "10m"
+        encryption_timeout = options.encryption_timeout or "10m",
+        spell_langs = options.spell_langs or {"en_us"},
     }
 end
 
@@ -22,13 +23,17 @@ function pensieve.setup(options)
     -- mappings that depend on values passed in options
     vim.api.nvim_create_user_command(
         "Pensieve",
-        pensieve.ask_then_write_daily,
-        {}
+        function(opts)
+            pensieve.write_daily(opts.fargs[1])
+        end,
+        { nargs = "?", complete = "dir" }
     )
     vim.api.nvim_create_user_command(
         "PensieveInit",
-        pensieve.ask_then_init_repo,
-        {}
+        function(opts)
+            pensieve.init_repo(opts.fargs[1])
+        end,
+        { nargs = "?", complete = "dir" }
     )
 end
 
@@ -40,8 +45,8 @@ function pensieve.write_daily(dirname)
     if not pensieve.is_configured() then
         return
     end
-    if not dirname then
-        vim.api.nvim_err_writeln("The passed directory is not readable.")
+    if (dirname == nil or dirname == '') then
+        vim.api.nvim_err_writeln("Cannot open repo: no directory passed.")
         return
     end
     local repo = Repo:new(dirname, pensieve.options)
@@ -56,49 +61,32 @@ function pensieve.write_daily(dirname)
     local group = vim.api.nvim_create_augroup("pensieve", {clear = false})
     vim.api.nvim_create_autocmd('VimLeavePre', {group = group, callback = function() vim.fn.chdir(cwd_pre) repo:close() end})
 
+    -- get and open daily file
     local daily_path = repo:get_daily_path()
     if not Utils.file_exists(daily_path) then
         vim.fn.writefile(Skeleton.get_daily(), daily_path, "s")
+        vim.cmd("e " .. daily_path)
+        Skeleton.assume_default_position()
+    else
+        vim.cmd("e " .. daily_path)
     end
-    vim.cmd("e " .. daily_path)
-    Skeleton.assume_default_position()
+
+    -- set up spelling in repo
+    repo:setup_spell()
 end
 
 function pensieve.init_repo(dirname)
     if not pensieve.is_configured() then
         return
     end
-    if not dirname then
+    if dirname == nil then
         vim.api.nvim_err_writeln("The passed directory is not readable.")
         return
     end
     local repo = Repo:new(dirname, pensieve.options)
     repo:init_on_disk()
-end
-
-function pensieve.ask_then_init_repo()
-    local dirname = nil
-    vim.ui.input(
-        {
-            prompt = "Path: ",
-            completion = "dir"
-        },
-        function(input) dirname = input end
-    )
-    pensieve.init_repo(dirname)
     vim.api.nvim_out_write("Initialized repo in " .. dirname)
 end
 
-function pensieve.ask_then_write_daily()
-    local dirname = nil
-    vim.ui.input(
-        {
-            prompt = "Path: ",
-            completion = "dir"
-        },
-        function(input) dirname = input end
-    )
-    pensieve.write_daily(dirname)
-end
 pensieve.options = nil
 return pensieve
