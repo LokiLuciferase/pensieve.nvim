@@ -1,4 +1,3 @@
-local Utils = require("pensieve/utils")
 local Repo = require("pensieve/repo")
 local pensieve = {}
 

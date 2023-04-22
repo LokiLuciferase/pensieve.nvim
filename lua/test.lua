@@ -1,4 +1,3 @@
-local Repo = require "pensieve.repo"
-local pensieve = require "pensieve"
-local rv = Repo:new("~/testing-raw").getSkeleton()
-print(rv)
+local CapCheck = require("pensieve.cap_check")
+
+print(CapCheck:vimwiki())

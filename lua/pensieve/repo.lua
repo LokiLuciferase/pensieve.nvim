@@ -1,5 +1,6 @@
-local Utils = require("pensieve.utils")
-local GocryptFS = require("pensieve.crypt")
+local Utils = require("pensieve/utils")
+local CapCheck = require("pensieve/cap_check")
+local GocryptFS = require("pensieve/crypt")
 local Skeleton = require("pensieve/skeleton")
 
 Repo = {}
@@ -49,6 +50,36 @@ function Repo:new(dirpath, options)
     return ret
 end
 
+function Repo:setup_vimwiki()
+    self:fail_if_not_open()
+    vim.g.vimwiki_list = {{
+        path = self.repopath,
+        path_html = self.repopath .. "/html",
+        syntax = 'markdown',
+        ext = '.md',
+        auto_header = 1,
+        auto_tags = 1,
+        auto_toc = 1,
+        auto_diary_index = 1,
+        auto_generate_tags = 1,
+        auto_generate_links = 1,
+        diary_header = 'Diary Index',
+        diary_rel_path = 'entries/',
+        diary_index = 'index',
+        use_mouse = 1,
+        use_calendar = 1,
+    }}
+    vim.cmd('call vimwiki#vars#init()')
+    vim.g.vimwiki_global_ext = 0
+end
+
+function Repo:register_close_hook()
+    -- register augroup/autocmd to close repo on nvim exit
+    local cwd_pre = vim.fn.getcwd()
+    local group = vim.api.nvim_create_augroup("pensieve", {clear = false})
+    vim.api.nvim_create_autocmd('VimLeavePre', {group = group, callback = function() vim.fn.chdir(cwd_pre) self:close() end})
+end
+
 function Repo:init_on_disk()
     if get_encryption(self.dirpath) then
         error("Repo already exists at <" .. vim.fn.expand(self.dirpath) .. ">.")
@@ -60,7 +91,8 @@ function Repo:init_on_disk()
         local pensieve_pw_v2 = vim.fn.inputsecret("Initializing repo, repeat password: ")
         print("")
         GocryptFS.init(self.dirpath, pensieve_pw_v1, pensieve_pw_v2)
-        self:open()
+        GocryptFS.open(self.dirpath, pensieve_pw_v1, self.encryption_timeout)
+        self:register_close_hook()
     end
     vim.fn.mkdir(self.repopath .. "/entries", "p")
     vim.fn.mkdir(self.repopath .. "/meta", "p")
@@ -72,6 +104,7 @@ function Repo:init_on_disk()
     end
     print("\r\n")
     print("Repo initialized at <" .. vim.fn.expand(self.dirpath) .. ">, encryption = " .. self.encryption .. ".")
+    self:close()
 end
 
 function Repo:is_open()
@@ -92,10 +125,11 @@ function Repo:open()
         local pensieve_pw = vim.fn.inputsecret("Opening repo, password: ")
         GocryptFS.open(self.dirpath, pensieve_pw, self.encryption_timeout)
     end
-    -- register augroup/autocmd to close repo on nvim exit
-    local cwd_pre = vim.fn.getcwd()
-    local group = vim.api.nvim_create_augroup("pensieve", {clear = false})
-    vim.api.nvim_create_autocmd('VimLeavePre', {group = group, callback = function() vim.fn.chdir(cwd_pre) self:close() end})
+
+    self:register_close_hook()
+    if CapCheck.vimwiki then
+        self:setup_vimwiki()
+    end
 end
 
 function Repo:close()
@@ -144,8 +178,7 @@ function Repo:open_entry(date_abbrev)
         error("Invalid date string: " .. datestr)
     end
 
-    local fpath = self.repopath .. "/entries/" .. datesplit[1] .. "/" .. datesplit[2] .. "/" .. datesplit[3] .. "/entry.md"
-    vim.fn.mkdir(vim.fn.fnamemodify(fpath, ":h"), "p")
+    local fpath = self.repopath .. "/entries/" .. datestr .. ".md"
     if self.open_in_new_tab and (vim.fn.bufname("%") ~= "") then
         vim.cmd("tabe " .. fpath)
     else
@@ -166,7 +199,7 @@ function Repo:attach(glob, date_abbrev)
     if #datesplit ~= 3 then
         error("Invalid date string: " .. datestr)
     end
-    local attd = self.repopath .. "/entries/" .. datesplit[1] .. "/" .. datesplit[2] .. "/" .. datesplit[3] .. "/attachments/"
+    local attd = self.repopath .. "/entries/" .. datestr .. "/"
     vim.fn.mkdir(attd, "p")
     local files = vim.fn.glob(glob, true, true)
     for key,value in pairs(files) do

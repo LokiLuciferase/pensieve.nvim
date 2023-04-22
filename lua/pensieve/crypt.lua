@@ -26,7 +26,7 @@ function GocryptFS.open(dir_path, password, timeout)
 end
 
 function GocryptFS.close(dir_path)
-    local cmd = "fusermount -uz " .. dir_path .. "/plain" .. " 2>&1"
+    local cmd = "fusermount -uz " .. dir_path .. "/plain"
     local handle = io.popen(cmd)
     local out = handle:read("*a")
 end
