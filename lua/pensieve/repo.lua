@@ -73,6 +73,34 @@ function Repo:setup_vimwiki()
     vim.g.vimwiki_global_ext = 0
 end
 
+function Repo:setup_spell()
+    self:fail_if_not_open()
+    local spath = self.repopath .. "/meta/spell/spell.add"
+    vim.opt.spell = true
+    vim.opt.spelllang = table.concat(self.spell_langs, ",")
+    vim.opt.spellfile = spath
+    vim.cmd("silent! mkspell! " .. spath .. ".spl" .. " " .. spath)
+end
+
+function Repo:setup_md()
+    self:fail_if_not_open()
+    vim.o.autochdir = true
+    vim.o.filetype = "markdown"
+    vim.o.wrap = true
+    vim.o.textwidth = 0
+    vim.o.linebreak = true
+    vim.o.showbreak = ''
+    vim.o.spellcapcheck = 'none'
+    vim.api.nvim_buf_set_keymap(0, 'n', 'j', 'gj', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'n', 'k', 'gk', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'n', '0', 'g0', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'n', '$', 'g$', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'v', 'j', 'gj', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'v', 'k', 'gk', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'v', '0', 'g0', {noremap = true, silent = true})
+    vim.api.nvim_buf_set_keymap(0, 'v', '$', 'g$', {noremap = true, silent = true})
+end
+
 function Repo:register_close_hook()
     -- register augroup/autocmd to close repo on nvim exit
     local cwd_pre = vim.fn.getcwd()
@@ -124,9 +152,15 @@ function Repo:open()
     if self.encryption == "gocryptfs" then
         local pensieve_pw = vim.fn.inputsecret("Opening repo, password: ")
         GocryptFS.open(self.dirpath, pensieve_pw, self.encryption_timeout)
+        if not self:is_open() then
+            vim.api.nvim_err_writeln("Could not open repo.")
+            return
+        end
     end
 
     self:register_close_hook()
+    self:setup_spell()
+    self:setup_md()
     if CapCheck.vimwiki then
         self:setup_vimwiki()
     end
@@ -139,35 +173,6 @@ function Repo:close()
     if self.encryption == "gocryptfs" then
         GocryptFS.close(self.dirpath)
     end
-end
-
-function Repo:buf_setup_spell()
-    self:fail_if_not_open()
-    local spath = self.repopath .. "/meta/spell/spell.add"
-    vim.opt_local.spell = true
-    vim.opt_local.spelllang = table.concat(self.spell_langs, ",")
-    vim.opt_local.spellfile = spath
-    vim.cmd("silent! mkspell! " .. spath .. ".spl" .. " " .. spath)
-end
-
-function Repo:buf_setup_md()
-    self:fail_if_not_open()
-    vim.opt_local.autochdir = true
-    vim.opt_local.filetype = "markdown"
-    vim.opt_local.wrap = true
-    vim.opt_local.textwidth = 0
-    vim.opt_local.linebreak = true
-    vim.opt_local.showbreak = ''
-    vim.opt_local.spellcapcheck = 'none'
-    vim.opt_local.diffopt = vim.opt.diffopt + ',iwhite,iblank,followrap'
-    vim.api.nvim_buf_set_keymap(0, 'n', 'j', 'gj', {noremap = true, silent = true})
-    vim.api.nvim_buf_set_keymap(0, 'n', 'k', 'gk', {noremap = true, silent = true})
-    vim.api.nvim_buf_set_keymap(0, 'n', '0', 'g0', {noremap = true, silent = true})
-    vim.api.nvim_buf_set_keymap(0, 'n', '$', 'g$', {noremap = true, silent = true})
-    vim.api.nvim_buf_set_keymap(0, 'v', 'j', 'gj', {noremap = true, silent = true})
-    vim.api.nvim_buf_set_keymap(0, 'v', 'k', 'gk', {noremap = true, silent = true})
-    vim.api.nvim_buf_set_keymap(0, 'v', '0', 'g0', {noremap = true, silent = true})
-    vim.api.nvim_buf_set_keymap(0, 'v', '$', 'g$', {noremap = true, silent = true})
 end
 
 function Repo:open_entry(date_abbrev)
@@ -188,8 +193,6 @@ function Repo:open_entry(date_abbrev)
         vim.api.nvim_buf_set_lines(0, 0, -1, false, Skeleton.get_daily(datestr))
         Skeleton.assume_default_position()
     end
-    self:buf_setup_md()
-    self:buf_setup_spell()
 end
 
 function Repo:attach(glob, date_abbrev)
