@@ -20,10 +20,22 @@ function CapCheck.vimwiki()
     end
 end
 
+function CapCheck.stt()
+    local stt = io.popen("termux-speech-to-text -h")
+    local stt_h = stt:read("*a")
+    stt:close()
+    if stt_h == "" then
+        return false
+    else
+        return true
+    end
+end
+
 function CapCheck:new()
     local o = {
         gocryptfs = CapCheck.gocryptfs(),
-        vimwiki = CapCheck.vimwiki()
+        vimwiki = CapCheck.vimwiki(),
+        stt = CapCheck.stt()
     }
     setmetatable(o, self)
     self.__index = self

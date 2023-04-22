@@ -1,3 +1,5 @@
+local STT = require("pensieve/stt")
+local CapCheck = require("pensieve/cap_check")
 local Repo = require("pensieve/repo")
 local pensieve = {}
 
@@ -64,6 +66,13 @@ function pensieve.setup(options)
             pensieve.attach(opts.fargs[1], opts.fargs[2])
         end,
         { nargs = "+", complete = "file" }
+    )
+    vim.api.nvim_create_user_command(
+        "PensieveSTT",
+        function(opts)
+            pensieve.stt()
+        end,
+        {}
     )
 end
 
@@ -143,6 +152,19 @@ function pensieve.init_repo(dirname)
     repo:init_on_disk()
     PensieveRepo = repo
     vim.api.nvim_out_write("Initialized repo in " .. dirname)
+end
+
+
+function pensieve.stt()
+    if not pensieve.is_configured() then
+        return
+    end
+    if not CapCheck:stt() then
+        vim.api.nvim_err_writeln("STT is not available.")
+        return
+    end
+    local text = STT:get_text()
+    vim.api.nvim_out_write(text)
 end
 
 
