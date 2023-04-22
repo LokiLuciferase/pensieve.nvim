@@ -6,7 +6,17 @@ Repo = {}
 
 local function get_encryption(dirpath)
     local cmd = 'test -z "$(ls -A ' .. dirpath .. ' 2> /dev/null)"'
-    if ((not vim.fn.isdirectory(dirpath)) or (os.execute(cmd) / 256) == 0) then
+    local retval = os.execute(cmd)
+    if type(retval) == "number" then
+        retval = retval / 256
+    else
+        if retval == true then
+            retval = 0
+        else
+            retval = 1
+        end
+    end
+    if ((not vim.fn.isdirectory(dirpath)) or retval == 0) then
         rv = nil
     elseif Utils.file_exists(dirpath .. "/meta/repo.json") then
         rv = "plaintext"

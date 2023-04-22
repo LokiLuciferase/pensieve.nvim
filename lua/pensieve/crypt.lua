@@ -25,12 +25,6 @@ function GocryptFS.open(dir_path, password, timeout)
     f:close()
 end
 
-function GocryptFS.is_open(dir_path)
-    local cmd = 'test -z "$(ls -A ' .. dir_path .. '/plain)"'
-    local retval = os.execute(cmd) / 256
-    return retval
-end
-
 function GocryptFS.close(dir_path)
     local cmd = "fusermount -uz " .. dir_path .. "/plain" .. " 2>&1"
     local handle = io.popen(cmd)
