@@ -142,6 +142,7 @@ function pensieve.init_repo(dirname)
     end
     local repo = Repo:new(dirname, pensieve.options)
     repo:init_on_disk()
+    PensieveRepo = repo
     vim.api.nvim_out_write("Initialized repo in " .. dirname)
 end
 

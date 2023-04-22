@@ -56,12 +56,11 @@ function Repo:init_on_disk()
     if self.encryption == 'gocryptfs' then
         vim.fn.mkdir(self.dirpath .. '/cipher', 'p')
         vim.fn.mkdir(self.dirpath .. '/plain', 'p')
-        local pensieve_pw_v1 = vim.fn.inputsecret("Password: ")
-        local pensieve_pw_v2 = vim.fn.inputsecret("Repeat password: ")
+        local pensieve_pw_v1 = vim.fn.inputsecret("Initalizing repo, password: ")
+        local pensieve_pw_v2 = vim.fn.inputsecret("Initializing repo, repeat password: ")
         print("")
         GocryptFS.init(self.dirpath, pensieve_pw_v1, pensieve_pw_v2)
-        GocryptFS.open(self.dirpath, pensieve_pw_v1, self.encryption_timeout)
-
+        self:open()
     end
     vim.fn.mkdir(self.repopath .. "/entries", "p")
     vim.fn.mkdir(self.repopath .. "/meta", "p")
@@ -70,9 +69,6 @@ function Repo:init_on_disk()
     os.execute("touch " .. self.repopath .. "/meta/spell/spell.add")
     if not self:is_open() then
         error("Could not initialize repo.")
-    end
-    if self.encryption == 'gocryptfs' then
-        GocryptFS.close(self.dirpath)
     end
     print("\r\n")
     print("Repo initialized at <" .. vim.fn.expand(self.dirpath) .. ">, encryption = " .. self.encryption .. ".")
@@ -93,7 +89,7 @@ function Repo:open()
         return
     end
     if self.encryption == "gocryptfs" then
-        local pensieve_pw = vim.fn.inputsecret("Password: ")
+        local pensieve_pw = vim.fn.inputsecret("Opening repo, password: ")
         GocryptFS.open(self.dirpath, pensieve_pw, self.encryption_timeout)
     end
     -- register augroup/autocmd to close repo on nvim exit
