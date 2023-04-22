@@ -163,6 +163,7 @@ function Repo:open()
     self:setup_md()
     if CapCheck.vimwiki then
         self:setup_vimwiki()
+        vim.cmd("VimwikiDiaryIndex")
     end
 end
 
