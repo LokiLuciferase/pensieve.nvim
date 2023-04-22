@@ -164,7 +164,8 @@ function pensieve.stt()
         return
     end
     local text = STT:get_text()
-    vim.api.nvim_out_write(text)
+    vim.cmd("startinsert")
+    vim.api.nvim_put({text}, "c", true, true)
 end
 
 
