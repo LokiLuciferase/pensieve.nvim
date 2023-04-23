@@ -74,6 +74,13 @@ function pensieve.setup(options)
         end,
         {}
     )
+    vim.api.nvim_create_user_command(
+        "PensieveLink",
+        function(opts)
+            pensieve.insert_link(opts.fargs[1], opts.fargs[2])
+        end,
+        { nargs = "*", complete = "file" }
+    )
 end
 
 
@@ -164,6 +171,25 @@ function pensieve.stt()
         return
     end
     local text = STT:get_text()
+    vim.cmd("startinsert")
+    vim.api.nvim_put({text}, "c", true, true)
+end
+
+
+function pensieve.insert_link(url, title)
+    if not pensieve.is_configured() then
+        return
+    end
+    if url == nil then
+        vim.ui.input({ prompt = "URL: ", completion = "file" }, function(input)
+            url = input
+        end)
+    end
+    if title == nil then
+        local tsp = Utils.splitstring(url, "/")
+        title = tsp[#tsp]:gsub(".md", "")
+    end
+    local text = "[" .. title .. "](" .. url .. ")"
     vim.cmd("startinsert")
     vim.api.nvim_put({text}, "c", true, true)
 end
