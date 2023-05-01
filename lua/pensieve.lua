@@ -216,9 +216,9 @@ end
 pensieve.options = nil
 
 -- setup default keymaps
-vim.api.nvim_set_keymap("n", "<leader>po", ":PensieveOpen", { noremap = true })
+vim.api.nvim_set_keymap("n", "<leader>po", ":PensieveOpen ", { noremap = true })
 vim.api.nvim_set_keymap("n", "<leader>pe", ":PensieveEdit<CR>", { noremap = true })
 vim.api.nvim_set_keymap("n", "<leader>pet", ":PensieveEdit t+1<CR>", { noremap = true })
 vim.api.nvim_set_keymap("n", "<leader>pey", ":PensieveEdit t-1<CR>", { noremap = true })
-vim.api.nvim_set_keymap("n", "<leader>pl", ":PensieveLink", { noremap = true })
+vim.api.nvim_set_keymap("n", "<leader>pl", ":PensieveLink ", { noremap = true })
 return pensieve
