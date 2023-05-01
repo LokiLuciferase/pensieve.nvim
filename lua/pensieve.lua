@@ -102,6 +102,9 @@ function pensieve.open_repo(dirname)
         PensieveRepo = nil
     end
     local repo = Repo:new(dirname, pensieve.options)
+    if repo == nil then
+        return
+    end
     repo:open()
     if not repo:is_open() then
         vim.api.nvim_err_writeln("Could not open repo.")
@@ -156,6 +159,9 @@ function pensieve.init_repo(dirname)
         return
     end
     local repo = Repo:new(dirname, pensieve.options)
+    if repo == nil then
+        return
+    end
     repo:init_on_disk()
     PensieveRepo = repo
     vim.api.nvim_out_write("Initialized repo in " .. dirname)

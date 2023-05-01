@@ -41,6 +41,10 @@ function Repo:new(dirpath, options)
         open_in_new_tab = options.open_in_new_tab,
     }
     if newobj.encryption == "gocryptfs" then
+        if not CapCheck.gocryptfs() then
+            vim.api.nvim_err_writeln("GocryptFS not present, cannot set up repo.")
+            return nil
+        end
         newobj.repopath = dirpath .. "/plain"
     else
         newobj.repopath = dirpath
@@ -162,7 +166,7 @@ function Repo:open()
     self:register_close_hook()
     self:setup_spell()
     self:setup_md()
-    if CapCheck.vimwiki then
+    if CapCheck.vimwiki() then
         self:setup_vimwiki()
         vim.cmd("VimwikiDiaryIndex")
     end
