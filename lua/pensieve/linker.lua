@@ -52,6 +52,12 @@ end
 
 
 function Linker:alias(entity, alias)
+    if self.aliases_to_entities[alias] then
+        vim.api.nvim_err_writeln(
+            "Alias already exists: " .. alias .. " -> " .. self.aliases_to_entities[alias]
+        )
+        return false
+    end
     if self.entities_to_aliases[entity] then
         self.entities_to_aliases[entity][alias] = 1
     else
@@ -60,6 +66,7 @@ function Linker:alias(entity, alias)
     end
     self.aliases_to_entities[alias] = entity
     Linker:dump_aliases()
+    return true
 end
 
 

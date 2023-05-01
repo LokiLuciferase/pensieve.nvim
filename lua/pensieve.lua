@@ -194,7 +194,10 @@ function pensieve.link(url_or_alias, alias)
         end
     else
         entity = url_or_alias
-        PensieveRepo.linker:alias(entity, alias)
+        local success = PensieveRepo.linker:alias(entity, alias)
+        if success == false then
+            return
+        end
     end
     local text = "[" .. alias .. "](" .. entity .. ".md)"
     vim.cmd("startinsert")
