@@ -77,9 +77,9 @@ function pensieve.setup(options)
     vim.api.nvim_create_user_command(
         "PensieveLink",
         function(opts)
-            pensieve.insert_link(opts.fargs[1], opts.fargs[2])
+            pensieve.link(opts.fargs[1], opts.fargs[2])
         end,
-        { nargs = "*", complete = "file" }
+        { nargs = "*", complete = pensieve.autocomplete_alias }
     )
 end
 
@@ -176,24 +176,49 @@ function pensieve.stt()
 end
 
 
-function pensieve.insert_link(url, title)
+function pensieve.link(url_or_alias, alias)
+    local entity = nil
     if not pensieve.is_configured() then
         return
     end
-    if url == nil then
-        vim.ui.input({ prompt = "URL: ", completion = "file" }, function(input)
-            url = input
-        end)
+    if PensieveRepo == nil then
+        vim.api.nvim_err_writeln("No repo is open.")
+        return
     end
-    if title == nil then
-        local tsp = Utils.splitstring(url, "/")
-        title = tsp[#tsp]:gsub(".md", "")
+    if alias == nil then
+        alias = url_or_alias
+        entity = PensieveRepo.linker.aliases_to_entities[alias]
+        if entity == nil then
+            vim.api.nvim_err_writeln("No entity found for " .. url_or_alias)
+            return
+        end
+    else
+        entity = url_or_alias
+        PensieveRepo.linker:alias(entity, alias)
     end
-    local text = "[" .. title .. "](" .. url .. ")"
+    local text = "[" .. alias .. "](" .. entity .. ".md)"
     vim.cmd("startinsert")
     vim.api.nvim_put({text}, "c", true, true)
 end
 
 
+function pensieve.autocomplete_alias(prefix)
+    if not pensieve.is_configured() then
+            return
+        end
+    if PensieveRepo == nil then
+        return
+    end
+    return PensieveRepo.linker:autocomplete_alias(prefix)
+end
+
+
 pensieve.options = nil
+
+-- setup default keymaps
+vim.api.nvim_set_keymap("n", "<leader>po", ":PensieveOpen", { noremap = true })
+vim.api.nvim_set_keymap("n", "<leader>pe", ":PensieveEdit<CR>", { noremap = true })
+vim.api.nvim_set_keymap("n", "<leader>pet", ":PensieveEdit t+1<CR>", { noremap = true })
+vim.api.nvim_set_keymap("n", "<leader>pey", ":PensieveEdit t-1<CR>", { noremap = true })
+vim.api.nvim_set_keymap("n", "<leader>pl", ":PensieveLink", { noremap = true })
 return pensieve

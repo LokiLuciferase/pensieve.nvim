@@ -2,6 +2,7 @@ local Utils = require("pensieve/utils")
 local CapCheck = require("pensieve/cap_check")
 local GocryptFS = require("pensieve/crypt")
 local Skeleton = require("pensieve/skeleton")
+local Linker = require("pensieve/linker")
 
 Repo = {}
 
@@ -165,6 +166,7 @@ function Repo:open()
         self:setup_vimwiki()
         vim.cmd("VimwikiDiaryIndex")
     end
+    self.linker = Linker:new(self.repopath)
 end
 
 function Repo:close()
