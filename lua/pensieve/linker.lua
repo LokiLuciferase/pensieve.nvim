@@ -25,6 +25,25 @@ function Linker.invert_aliases(aliases)
 end
 
 
+function Linker.parse_link_args(args)
+    if #args == 0 then
+        -- this is an error
+        vim.api.nvim_err_writeln("No arguments passed.")
+        return {}
+    elseif #args == 1 then
+        return args
+    else
+        if string.match(args[1], '/') then
+            -- we want to set a new alias for the given group/entity
+            return {table.remove(args, 1), table.concat(args, ' ')}
+        else
+            -- we want to retrieve an entity using a multi-word alias
+            return {table.concat(args, ' ')}
+        end
+    end
+end
+
+
 function Linker:new(repopath)
     local o = {}
     setmetatable(o, self)
@@ -52,6 +71,16 @@ end
 
 
 function Linker:alias(entity, alias)
+    local entity_wo_ext = entity:match("(.+)%..+$")
+    if entity_wo_ext then
+        entity = entity_wo_ext
+    end
+    if not string.match(entity, "/") then
+        vim.api.nvim_err_writeln(
+            "Cannot create alias without entity category: " .. alias .. " -> " .. entity
+        )
+        return false
+    end
     if self.aliases_to_entities[alias] then
         vim.api.nvim_err_writeln(
             "Alias already exists: " .. alias .. " -> " .. self.aliases_to_entities[alias]

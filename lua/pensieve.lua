@@ -77,7 +77,7 @@ function pensieve.setup(options)
     vim.api.nvim_create_user_command(
         "PensieveLink",
         function(opts)
-            pensieve.link(opts.fargs[1], opts.fargs[2])
+            pensieve.link(opts.fargs)
         end,
         { nargs = "*", complete = pensieve.autocomplete_alias }
     )
@@ -182,8 +182,7 @@ function pensieve.stt()
 end
 
 
-function pensieve.link(url_or_alias, alias)
-    local entity = nil
+function pensieve.link(fargs)
     if not pensieve.is_configured() then
         return
     end
@@ -191,15 +190,19 @@ function pensieve.link(url_or_alias, alias)
         vim.api.nvim_err_writeln("No repo is open.")
         return
     end
-    if alias == nil then
-        alias = url_or_alias
+    local alias = nil
+    local entity = nil
+    local parsed = PensieveRepo.linker.parse_link_args(fargs)
+    if parsed[2] == nil then
+        alias = parsed[1]
         entity = PensieveRepo.linker.aliases_to_entities[alias]
         if entity == nil then
-            vim.api.nvim_err_writeln("No entity found for " .. url_or_alias)
+            vim.api.nvim_err_writeln("No entity found for " .. alias)
             return
         end
     else
-        entity = url_or_alias
+        entity = parsed[1]
+        alias = parsed[2]
         local success = PensieveRepo.linker:alias(entity, alias)
         if success == false then
             return
