@@ -151,10 +151,10 @@ function Repo:fail_if_not_open()
 end
 
 function Repo:open()
-    if self:is_open() then
-        return
-    end
     if self.encryption == "gocryptfs" then
+        if self:is_open() then
+            return
+        end
         local pensieve_pw = vim.fn.inputsecret("Opening repo, password: ")
         GocryptFS.open(self.dirpath, pensieve_pw, self.encryption_timeout)
         if not self:is_open() then
